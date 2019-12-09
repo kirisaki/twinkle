@@ -35,8 +35,17 @@ async fn handler(pair: (usize, std::net::SocketAddr),
     match parse_body(&buf, amt) {
         Some((cmd, key, value)) => {
             let resp = match cmd {
-                0x00 => &[0x00]
+                0x00 => vec![0x00],
+                0x01 =>
+                    match store.get(key) {
+                        Some(v) =>
+                            [vec![0x01], key.to_vec(), vec![0x0d, 0x0a], v.to_vec()].concat(),
+                        None =>
+                            vec![0x02],
+                    },
+                _ => vec![0x02],
             };
+            socket.send_to(&resp, &src);
             return Ok(());
         },
         None =>
