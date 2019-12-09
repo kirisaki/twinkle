@@ -8,14 +8,15 @@ const BUF_SIZE: usize = 64 * 1024;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut socket = UdpSocket::bind("127.0.0.1:3000").await?;
-    let store = Arc::new(Mutex::new(0));
+    let store = Arc::new(Mutex::new(HashMap::new()));
 
     loop {
+        let socket = UdpSocket::bind("127.0.0.1:3000").await?;
+        let (mut rx, tx) = socket.split();
         let mut buf = [0; BUF_SIZE];
-        match socket.recv_from(&mut buf).await {
+        match rx.recv_from(&mut buf).await {
             Ok(v) => {
-                tokio::spawn(handler(v, buf, store.clone()))
+                tokio::spawn(handler(v, buf, store.clone(), tx))
             },
             Err(e) => {
                 println!("error: {:?}", e);
@@ -25,14 +26,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
  }
 
-async fn handler(pair: (usize, std::net::SocketAddr), buf: [u8; BUF_SIZE], store: Arc<Mutex<i64>>) {
+async fn handler(pair: (usize, std::net::SocketAddr),
+                 buf: [u8; BUF_SIZE],
+                 store: Arc<Mutex<HashMap<&[u8], &[u8]>>>,
+                 mut socket: tokio::net::udp::SendHalf) -> Result<(), String> {
     let mut store = store.lock().await;
     let (amt, src) = pair;
     match parse_body(&buf, amt) {
-        Some((cmd, key, value)) => 
-            println!("cmd: {:?}, key: {:?}, value: {:?}", cmd, key, value),
+        Some((cmd, key, value)) => {
+            let resp = match cmd {
+                0x00 => &[0x00]
+            };
+            return Ok(());
+        },
         None =>
-            println!("nyaan...")
+            return Err("failed parsing".to_string())
     }
 }
 
