@@ -1,5 +1,5 @@
 [package]
-name = "tinykvs"
+name = "twinkle-exe"
 version = "0.1.0"
 authors = ["Akihito KIRISAKI <kirisaki@klaraworks.net>"]
 edition = "2018"
