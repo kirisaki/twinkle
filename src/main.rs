@@ -3,7 +3,7 @@ use tokio::sync::Mutex;
 use std::collections::HashMap;
 use std::sync::{Arc};
 
-
+// limitation of uUDP
 const BUF_SIZE: usize = 64 * 1024;
 
 #[tokio::main]
@@ -87,5 +87,24 @@ fn parse_body<'a>(buf: &'a [u8; BUF_SIZE], amt: usize) -> Option<(u8, &'a [u8], 
         return Some((cmd, key, value));
     } else {
         return None;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{parse_body, BUF_SIZE};
+
+    #[test]
+    fn test_parse_body() {
+        let cases: &[(&[u8], usize, Option<(u8, &[u8], &[u8])>)] = &[
+            (&[0x00, 0x00, 0x00], 3, Some((From::from(0x00), &[], &[]))),
+        ];
+        for &(received, amt, expected) in cases {
+            let mut buf = [0; BUF_SIZE];
+            for i in 0..received.len() {
+                buf[i] = received[i];
+            }
+            assert_eq!(parse_body(&buf, amt), expected);
+        }
     }
 }
