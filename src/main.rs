@@ -96,15 +96,19 @@ mod tests {
 
     #[test]
     fn test_parse_body() {
-        let cases: &[(&[u8], usize, Option<(u8, &[u8], &[u8])>)] = &[
-            (&[0x00, 0x00, 0x00], 3, Some((From::from(0x00), &[], &[]))),
+        let cases: &[(&[u8], Option<(u8, &[u8], &[u8])>)] = &[
+            (&[0, 0, 0], Some((0, &[], &[]))),
+            (&[0, 0, 0, 0], Some((0, &[], &[0]))),
+            (&[0, 0], None),
+            (&[0, 0, 1, 0], Some((0, &[0], &[]))),
+            (&[0, 0, 1, 0, 0], Some((0, &[0], &[0]))),
         ];
-        for &(received, amt, expected) in cases {
+        for &(received, expected) in cases {
             let mut buf = [0; BUF_SIZE];
             for i in 0..received.len() {
                 buf[i] = received[i];
             }
-            assert_eq!(parse_body(&buf, amt), expected);
+            assert_eq!(parse_body(&buf, received.len()), expected);
         }
     }
 }
