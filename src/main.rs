@@ -28,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 async fn handler(pair: (usize, std::net::SocketAddr),
                  buf: [u8; BUF_SIZE],
-                 store: Arc<Mutex<HashMap<&[u8], &[u8]>>>,
+                 store: Arc<Mutex<HashMap<Vec<u8>, Vec<u8>>>>,
                  mut socket: std::net::UdpSocket) -> Result<(), String> {
     let mut store = store.lock().await;
     let (amt, src) = pair;
@@ -39,11 +39,16 @@ async fn handler(pair: (usize, std::net::SocketAddr),
                 0x00 => vec![0x00],
                 0x01 =>
                     match store.get(key) {
-                        Some(v) =>
-                            [vec![0x01], key.to_vec(), vec![0x0d, 0x0a], v.to_vec()].concat(),
+                        Some(v) => {
+                            [vec![0x01], key.to_vec(), vec![0x0d, 0x0a], v.to_vec()].concat()
+                        },
                         None =>
                             vec![0x02],
                     },
+                0x02 => {
+                    let _ = store.insert(key.to_vec(), value.to_vec());
+                    vec![0x01]
+                },
                 _ => vec![0x02],
             };
             socket.send_to(&resp, &src);
