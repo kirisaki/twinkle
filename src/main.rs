@@ -29,14 +29,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn handler(pair: (usize, std::net::SocketAddr),
                  buf: [u8; BUF_SIZE],
                  store: Arc<Mutex<HashMap<Vec<u8>, Vec<u8>>>>,
-                 mut socket: std::net::UdpSocket) -> Result<(), String> {
+                 socket: std::net::UdpSocket) -> Result<(), String> {
     let mut store = store.lock().await;
     let (amt, src) = pair;
     match parse_body(&buf, amt) {
         Some((cmd, key, value)) => {
             println!("c: {:?}, k: {:?}, v: {:?}", cmd, key, value);
             let resp = match cmd {
+                //ping
                 0x00 => vec![0x00],
+                //get
                 0x01 =>
                     match store.get(key) {
                         Some(v) => {
@@ -45,13 +47,19 @@ async fn handler(pair: (usize, std::net::SocketAddr),
                         None =>
                             vec![0x02],
                     },
+                //set
                 0x02 => {
                     let _ = store.insert(key.to_vec(), value.to_vec());
                     vec![0x01]
                 },
+                //unset
+                0x03 => {
+                    let _ = store.remove(&key.to_vec());
+                    vec![0x01]
+                },
                 _ => vec![0x02],
             };
-            socket.send_to(&resp, &src);
+            let _ = socket.send_to(&resp, &src);
             return Ok(());
         },
         None =>
