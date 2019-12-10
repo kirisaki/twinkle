@@ -1,5 +1,5 @@
 use std::net::UdpSocket;
-use tokio::sync::Mutex;
+use std::sync::Mutex;
 use std::collections::HashMap;
 use std::sync::{Arc};
 
@@ -30,7 +30,7 @@ async fn handler(pair: (usize, std::net::SocketAddr),
                  buf: [u8; BUF_SIZE],
                  store: Arc<Mutex<HashMap<Vec<u8>, Vec<u8>>>>,
                  socket: std::net::UdpSocket) -> Result<(), String> {
-    let mut store = store.lock().await;
+    let mut store = store.lock().unwrap();
     let (amt, src) = pair;
     match parse_body(&buf, amt) {
         Some((cmd, key, value)) => {

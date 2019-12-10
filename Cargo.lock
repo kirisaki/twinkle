@@ -329,14 +329,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tinykvs"
-version = "0.1.0"
-dependencies = [
- "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "tokio 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "tokio"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -365,6 +357,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "quote 1.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 1.0.11 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "twinkle-exe"
+version = "0.1.0"
+dependencies = [
+ "futures 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tokio 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
