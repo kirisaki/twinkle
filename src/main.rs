@@ -1,43 +1,68 @@
-use std::net::UdpSocket;
-use std::sync::Mutex;
+use tokio::net::UdpSocket;
+use tokio::net::udp::{RecvHalf, SendHalf};
+use tokio::sync::Mutex;
 use std::collections::HashMap;
 use std::sync::{Arc};
+use futures::future;
 
 // limitation of uUDP
 const BUF_SIZE: usize = 64 * 1024;
 
+struct Server {
+    rx: RecvHalf,
+    buf: Vec<u8>,
+}
+
+impl Server {
+    async fn run(self) -> Result<(), std::io::Error> {
+        let Server {mut rx, mut buf} = self;
+        loop {
+            let (_, src) = rx.recv_from(&mut buf).await?;
+            println!("nyan?");
+        }
+    }
+}
+
+struct Client {
+    tx: SendHalf,
+}
+
+impl Client {
+    async fn run(self) -> Result<(), std::io::Error> {
+        let Client {mut tx} = self;
+        loop {
+            println!("nyaan");
+            tokio::time::delay_for(std::time::Duration::from_secs(2)).await;
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let store = Arc::new(Mutex::new(HashMap::new()));
-    let socket = UdpSocket::bind("127.0.0.1:3001")?;
+    let (rx, tx) = UdpSocket::bind("127.0.0.1:3000").await?.split();
+    let server = Server {rx, buf: vec![0; BUF_SIZE]};
+    let client = Client {tx};
 
-    loop {
-        let c_socket = socket.try_clone()?;
-        let mut buf = [0; BUF_SIZE];
-        match socket.recv_from(&mut buf) {
-            Ok(v) => {
-                tokio::spawn(handler(v, buf, store.clone(), c_socket))
-            },
-            Err(e) => {
-                println!("error: {:?}", e);
-                continue;
-            }
-        };
-    }
- }
+    let _ = future::join(server.run(), client.run()).await;
 
+    Ok(())
+}
+/*
 async fn handler(pair: (usize, std::net::SocketAddr),
                  buf: [u8; BUF_SIZE],
                  store: Arc<Mutex<HashMap<Vec<u8>, Vec<u8>>>>,
-                 socket: std::net::UdpSocket) -> Result<(), String> {
-    let mut store = store.lock().unwrap();
+                 socket: &mut tokio::net::UdpSocket) -> Result<(), String> {
+    let mut store = store.lock().await;
     let (amt, src) = pair;
     match parse_body(&buf, amt) {
         Some((cmd, key, value)) => {
             println!("c: {:?}, k: {:?}, v: {:?}", cmd, key, value);
             let resp = match cmd {
                 //ping
-                0x00 => vec![0x00],
+                0x00 => {
+                    println!("ping");
+                    vec![0x00,0x02,0x03]
+                },
                 //get
                 0x01 =>
                     match store.get(key) {
@@ -85,11 +110,12 @@ fn parse_body<'a>(buf: &'a [u8; BUF_SIZE], amt: usize) -> Option<(u8, &'a [u8], 
             &buf[3+keylen..amt]
         };
         return Some((cmd, key, value));
+    } else if amt == 1 {
+        return Some((buf[0], &[], &[]));
     } else {
-        return None;
+        return None
     }
 }
-
 #[cfg(test)]
 mod tests {
     use crate::{parse_body, BUF_SIZE};
@@ -112,3 +138,4 @@ mod tests {
         }
     }
 }
+ */
