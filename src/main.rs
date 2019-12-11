@@ -3,47 +3,60 @@ use tokio::net::udp::{RecvHalf, SendHalf};
 use tokio::sync::Mutex;
 use std::collections::HashMap;
 use std::sync::{Arc};
-use futures::future;
+use futures::future::{try_join};
+use tokio::sync::mpsc::{Sender, Receiver, channel};
+use std::io::{Error, ErrorKind};
 
 // limitation of uUDP
 const BUF_SIZE: usize = 64 * 1024;
 
+struct Instruction {
+    dest: std::net::SocketAddr,
+}
+
 struct Server {
-    rx: RecvHalf,
+    sock: RecvHalf,
+    chan: Sender<Instruction>,
     buf: Vec<u8>,
 }
 
 impl Server {
     async fn run(self) -> Result<(), std::io::Error> {
-        let Server {mut rx, mut buf} = self;
+        let Server {mut sock, mut chan, mut buf} = self;
         loop {
-            let (_, src) = rx.recv_from(&mut buf).await?;
-            println!("nyan?");
+            let (_, src) = sock.recv_from(&mut buf).await?;
+            chan.try_send(Instruction{dest: src});
+            println!("send");
         }
     }
 }
 
 struct Client {
-    tx: SendHalf,
+    sock: SendHalf,
+    chan: Receiver<Instruction>, 
 }
 
 impl Client {
     async fn run(self) -> Result<(), std::io::Error> {
-        let Client {mut tx} = self;
-        loop {
-            println!("nyaan");
+        let Client {mut sock, mut chan} = self;
+        while let Some(i) = chan.recv().await {
+            sock.send_to(b"\n\nnyaan", &i.dest).await;
+            println!("{:?}", i.dest);
             tokio::time::delay_for(std::time::Duration::from_secs(2)).await;
-        }
+        };
+
+        Ok(())
     }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let (rx, tx) = UdpSocket::bind("127.0.0.1:3000").await?.split();
-    let server = Server {rx, buf: vec![0; BUF_SIZE]};
-    let client = Client {tx};
+    let (rxs, txs) = UdpSocket::bind("127.0.0.1:3000").await?.split();
+    let (txc, rxc) = channel(1024);
+    let server = Server {sock: rxs, chan: txc,  buf: vec![0; BUF_SIZE]};
+    let client = Client {sock: txs, chan: rxc};
 
-    let _ = future::join(server.run(), client.run()).await;
+    let _ = try_join(server.run(), client.run()).await;
 
     Ok(())
 }
