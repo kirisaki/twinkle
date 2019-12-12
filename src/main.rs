@@ -12,9 +12,11 @@ use std::sync::{Arc};
 
 // limitation of uUDP
 const BUF_SIZE: usize = 64 * 1024;
+const UUID_LEN: usize = 16;
 
 type Bytes = Vec<u8>;
 type Store = HashMap<Bytes, Bytes>;
+type UUID = Vec<u8>;
 
 #[derive(Debug, Fail)]
 enum TwinkleError {
@@ -48,21 +50,23 @@ impl Packet {
     fn parse(self) -> Result<Instruction, TwinkleError> {
         let Packet {dest, body, amt} = self;
         let e = Err(TwinkleError::ParseError);
-        if amt == 0 {
+        if amt < UUID_LEN + 1 {
             e
-        } else if amt == 1 {
+        } else if amt == UUID_LEN + 1 {
             let req = match body[0] {
                 0x01 =>
                     Request::Ping,
                 _ => return e
             };
-            Ok(Instruction{req, dest})
-        } else if amt == 2 {
+            let uuid = body[1..UUID_LEN+1].to_vec();
+            Ok(Instruction{req, uuid, dest})
+        } else if amt == UUID_LEN + 2 {
             e
         } else {
             let cmd = body[0];
-            let high: usize = From::from(body[1]);
-            let low: usize = From::from(body[2]);
+            let uuid = body[1..UUID_LEN + 2].to_vec();
+            let high: usize = From::from(body[UUID_LEN + 1]);
+            let low: usize = From::from(body[UUID_LEN + 2]);
             let keylen = high * 256 + low;
             let key = if keylen == 0 {
                 vec![]
@@ -84,7 +88,7 @@ impl Packet {
                 _ =>
                     return e,
             };
-            Ok(Instruction{req, dest})
+            Ok(Instruction{req, uuid, dest})
         }
     }
 }
@@ -92,33 +96,42 @@ impl Packet {
 #[derive(Debug)]
 struct Instruction {
     req: Request,
+    uuid: UUID,
     dest: SocketAddr,
 }
 
 impl Instruction {
     async fn respond(self, s: Arc<Mutex<Store>>) -> Result<(Bytes, SocketAddr), TwinkleError> {
         let mut store = s.lock().await;
-        let Instruction{req, dest} = self;
+        let Instruction{req, uuid, dest} = self;
         let resp = match req {
             Request::Ping => vec![1],
             Request::Get(k) => {
                 match store.get(&k) {
                     Some(v) => {
                         let mut r = vec![1];
+                        r.append(&mut uuid.clone());
                         r.append(&mut v.clone());
                         r
                     },
-                    None =>
-                        vec![2]
+                    None => {
+                        let mut r = vec![1];
+                        r.append(&mut uuid.clone());
+                        r
+                    },
                 }
             },
             Request::Set(k, v) => {
                 store.insert(k.clone(), v.clone());
-                vec![1]
+                let mut r = vec![1];
+                r.append(&mut uuid.clone());
+                r
             },
             Request::Unset(k) => {
                 store.remove(&k);
-                vec![1]
+                let mut r = vec![1];
+                r.append(&mut uuid.clone());
+                r
             },
         };
         Ok((resp, dest))
@@ -185,7 +198,7 @@ mod tests {
     fn test_parse_success() {
         let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
         let cases = vec![
-            (b"\x01", Request::Ping),
+            (b"\x01aaaabbbbccccdddd", Request::Ping),
         ];
         for (received, expected) in cases {
             let packet = Packet{
