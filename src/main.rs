@@ -26,7 +26,7 @@ enum TwinkleError {
 
 impl From<TwinkleError> for std::io::Error {
     fn from(e: TwinkleError) -> std::io::Error {
-        std::io::Error::new(std::io::ErrorKind::Other, "")
+        std::io::Error::new(std::io::ErrorKind::Other, e.to_string())
     }
 }
 
@@ -96,13 +96,14 @@ struct Instruction {
 }
 
 impl Instruction {
-   fn respond(self, s: Store) -> Result<Bytes, TwinkleError> {
+    async fn respond(self, s: Arc<Mutex<Store>>) -> Result<(Bytes, SocketAddr), TwinkleError> {
+        let store = s.lock().await;
         let Instruction{req, dest} = self;
         let resp = match req {
             Request::Ping => vec![1],
             _ => return Err(TwinkleError::SomethingWrong)
         };
-        Ok(resp)
+        Ok((resp, dest))
     }
 }
 
@@ -130,14 +131,15 @@ impl Server {
 struct Client {
     sock: SendHalf,
     chan: Receiver<Packet>,
-    store: Store,
+    store: Arc<Mutex<Store>>,
 }
 
 impl Client {
     async fn run(self) -> Result<(), std::io::Error> {
-        let Client {mut sock, mut chan, mut store} = self;
+        let Client {mut sock, mut chan, store} = self;
         while let Some(p) = chan.recv().await {
-            let resp = p.parse()?.respond(store)?;
+            let (resp, dest) = p.parse()?.respond(store.clone()).await?;
+            sock.send_to(&resp, &dest).await?;
         };
 
         Ok(())
@@ -150,7 +152,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (rxs, txs) = UdpSocket::bind("127.0.0.1:3000").await?.split();
     let (txc, rxc) = channel(1024);
     let server = Server {sock: rxs, chan: txc, buf: vec![0; BUF_SIZE]};
-    let client = Client {sock: txs, chan: rxc, store: HashMap::new()};
+    let client = Client {sock: txs, chan: rxc, store: Arc::new(Mutex::new(HashMap::new()))};
 
     let _ = try_join(server.run(), client.run()).await?;
 
