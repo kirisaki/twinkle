@@ -23,6 +23,7 @@ struct Packet {
     amt: usize,
 }
 
+#[derive(Debug, PartialEq)]
 enum Request {
     Ping,
     Get(Vec<u8>),
@@ -76,6 +77,7 @@ impl Packet {
     }
 }
 
+#[derive(Debug)]
 struct Instruction {
     req: Request,
     dest: SocketAddr,
@@ -129,4 +131,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _ = try_join(server.run(), client.run()).await;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Packet, Request};
+    use std::net::SocketAddr;
+    #[test]
+    fn test_parse_success() {
+        let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+        let cases = vec![
+            (b"\x01", Request::Ping),
+        ];
+        for (received, expected) in cases {
+            let packet = Packet{
+                dest: addr,
+                body: received.to_vec(),
+                amt: received.len()
+            };
+            let result = packet.parse().unwrap();
+            assert_eq!(result.req, expected);
+        }
+    }
 }
