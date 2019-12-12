@@ -7,28 +7,41 @@ use futures::future::{try_join};
 use tokio::sync::mpsc::{Sender, Receiver, channel};
 use std::net::SocketAddr;
 use failure::Error;
+use tokio::sync::Mutex;
+use std::sync::{Arc};
 
 // limitation of uUDP
 const BUF_SIZE: usize = 64 * 1024;
+
+type Bytes = Vec<u8>;
+type Store = HashMap<Bytes, Bytes>;
 
 #[derive(Debug, Fail)]
 enum TwinkleError {
     #[fail(display = "parse error")]
     ParseError,
+    #[fail(display = "something wrong")]
+    SomethingWrong,
+}
+
+impl From<TwinkleError> for std::io::Error {
+    fn from(e: TwinkleError) -> std::io::Error {
+        std::io::Error::new(std::io::ErrorKind::Other, "")
+    }
 }
 
 struct Packet {
     dest: SocketAddr,
-    body: Vec<u8>,
+    body: Bytes,
     amt: usize,
 }
 
 #[derive(Debug, PartialEq)]
 enum Request {
     Ping,
-    Get(Vec<u8>),
-    Set(Vec<u8>, Vec<u8>),
-    Unset(Vec<u8>),
+    Get(Bytes),
+    Set(Bytes, Bytes),
+    Unset(Bytes),
 }
 
 impl Packet {
@@ -72,7 +85,6 @@ impl Packet {
                     return e,
             };
             Ok(Instruction{req, dest})
-            
         }
     }
 }
@@ -83,10 +95,21 @@ struct Instruction {
     dest: SocketAddr,
 }
 
+impl Instruction {
+   fn respond(self, s: Store) -> Result<Bytes, TwinkleError> {
+        let Instruction{req, dest} = self;
+        let resp = match req {
+            Request::Ping => vec![1],
+            _ => return Err(TwinkleError::SomethingWrong)
+        };
+        Ok(resp)
+    }
+}
+
 struct Server {
     sock: RecvHalf,
     chan: Sender<Packet>,
-    buf: Vec<u8>,
+    buf: Bytes,
 }
 
 impl Server {
@@ -107,13 +130,14 @@ impl Server {
 struct Client {
     sock: SendHalf,
     chan: Receiver<Packet>,
-    store: HashMap<Vec<u8>, Vec<u8>>,
+    store: Store,
 }
 
 impl Client {
     async fn run(self) -> Result<(), std::io::Error> {
         let Client {mut sock, mut chan, mut store} = self;
         while let Some(p) = chan.recv().await {
+            let resp = p.parse()?.respond(store)?;
         };
 
         Ok(())
@@ -128,7 +152,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let server = Server {sock: rxs, chan: txc, buf: vec![0; BUF_SIZE]};
     let client = Client {sock: txs, chan: rxc, store: HashMap::new()};
 
-    let _ = try_join(server.run(), client.run()).await;
+    let _ = try_join(server.run(), client.run()).await?;
 
     Ok(())
 }
