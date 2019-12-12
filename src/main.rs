@@ -97,11 +97,29 @@ struct Instruction {
 
 impl Instruction {
     async fn respond(self, s: Arc<Mutex<Store>>) -> Result<(Bytes, SocketAddr), TwinkleError> {
-        let store = s.lock().await;
+        let mut store = s.lock().await;
         let Instruction{req, dest} = self;
         let resp = match req {
             Request::Ping => vec![1],
-            _ => return Err(TwinkleError::SomethingWrong)
+            Request::Get(k) => {
+                match store.get(&k) {
+                    Some(v) => {
+                        let mut r = vec![1];
+                        r.append(&mut v.clone());
+                        r
+                    },
+                    None =>
+                        vec![2]
+                }
+            },
+            Request::Set(k, v) => {
+                store.insert(k.clone(), v.clone());
+                vec![1]
+            },
+            Request::Unset(k) => {
+                store.remove(&k);
+                vec![1]
+            },
         };
         Ok((resp, dest))
     }
