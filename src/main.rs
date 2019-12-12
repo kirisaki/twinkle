@@ -71,12 +71,12 @@ impl Packet {
             let key = if keylen == 0 {
                 vec![]
             } else {
-                body[3..3+keylen].to_vec()
+                body[UUID_LEN + 3..UUID_LEN + 3 + keylen].to_vec()
             };
-            let val = if 3 + keylen == amt {
+            let val = if UUID_LEN + 3 + keylen == amt {
                 vec![]
             } else {
-                body[3+keylen..amt].to_vec()
+                body[UUID_LEN + 3 + keylen..amt].to_vec()
             };
             let req = match cmd {
                 0x02 =>
@@ -198,7 +198,10 @@ mod tests {
     fn test_parse_success() {
         let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
         let cases = vec![
-            (b"\x01aaaabbbbccccdddd", Request::Ping),
+            (b"\x01iiiijjjjkkkkllll".to_vec(), Request::Ping),
+            (b"\x02iiiijjjjkkkkllll\x00\x01a".to_vec(), Request::Get(b"a".to_vec())),
+            (b"\x03iiiijjjjkkkkllll\x00\x01abc".to_vec(), Request::Set(b"a".to_vec(),b"bc".to_vec())),
+            (b"\x04iiiijjjjkkkkllll\x00\x01a".to_vec(), Request::Unset(b"a".to_vec())),
         ];
         for (received, expected) in cases {
             let packet = Packet{
