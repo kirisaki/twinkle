@@ -2,9 +2,14 @@
 name = "twinkled"
 version = "0.1.0"
 authors = ["Akihito KIRISAKI <kirisaki@klaraworks.net>"]
+lisense = "BSD-3-Clause"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+description = "UDP-based, light key-value store"
+repository = "https://github.com/kirisaki/twinkle"
+keyeords = ["db"]
+categories = ["Database implementations"]
+readme = "README.md"
 
 [dependencies]
 futures = "0.3"
