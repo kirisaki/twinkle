@@ -1,14 +1,17 @@
 #[macro_use] extern crate failure;
 
+use std::net::SocketAddr;
+use std::sync::{Arc};
+use std::collections::HashMap;
+use std::io::{Error, ErrorKind};
+
+use futures::future::{try_join};
+
 use tokio::net::UdpSocket;
 use tokio::net::udp::{RecvHalf, SendHalf};
-use std::collections::HashMap;
-use futures::future::{try_join};
 use tokio::sync::mpsc::{Sender, Receiver, channel};
-use std::net::SocketAddr;
-use failure::Error;
 use tokio::sync::Mutex;
-use std::sync::{Arc};
+
 
 // limitation of uUDP
 const BUF_SIZE: usize = 64 * 1024;
@@ -26,9 +29,9 @@ enum TwinkleError {
     SomethingWrong,
 }
 
-impl From<TwinkleError> for std::io::Error {
-    fn from(e: TwinkleError) -> std::io::Error {
-        std::io::Error::new(std::io::ErrorKind::Other, e.to_string())
+impl From<TwinkleError> for Error {
+    fn from(e: TwinkleError) -> Error {
+        std::io::Error::new(ErrorKind::Other, e.to_string())
     }
 }
 
@@ -68,6 +71,7 @@ impl Packet {
             let high: usize = From::from(body[UUID_LEN + 1]);
             let low: usize = From::from(body[UUID_LEN + 2]);
             let keylen = high * 256 + low;
+            println!("{:?}", keylen);
             let key = if keylen == 0 {
                 vec![]
             } else {
@@ -105,7 +109,11 @@ impl Instruction {
         let mut store = s.lock().await;
         let Instruction{req, uuid, dest} = self;
         let resp = match req {
-            Request::Ping => vec![1],
+            Request::Ping => {
+                let mut r = vec![1];
+                r.append(&mut uuid.clone());
+                r
+            },
             Request::Get(k) => {
                 match store.get(&k) {
                     Some(v) => {
@@ -115,7 +123,7 @@ impl Instruction {
                         r
                     },
                     None => {
-                        let mut r = vec![1];
+                        let mut r = vec![2];
                         r.append(&mut uuid.clone());
                         r
                     },
