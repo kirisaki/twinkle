@@ -2,7 +2,7 @@
 name = "twinkled"
 version = "0.1.0"
 authors = ["Akihito KIRISAKI <kirisaki@klaraworks.net>"]
-lisense = "BSD-3-Clause"
+license = "BSD-3-Clause"
 edition = "2018"
 
 description = "UDP-based, light key-value store"
