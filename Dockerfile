@@ -1,10 +1,9 @@
-FROM rust:1.39-alpine3.10 AS builder
-COPY . .
-RUN mkdir -p /build
+FROM ekidd/rust-musl-builder:1.39.0 AS builder
+ADD . ./
+RUN sudo chown -R rust:rust /home/rust/src
 RUN cargo build --release
-RUN mv ./target/release/twinkled /build/
 
-FROM alpine:3.10.2
-COPY --from=builder /build/twinkled /build/twinkled
-RUN chmod u+x /build/twinkled
-ENTRYPOINT ["/build/twinkled"]
+FROM scratch
+COPY --from=builder /home/rust/src/target/x86_64-unknown-linux-musl/release/twinkled /
+EXPOSE 9000/udp
+ENTRYPOINT ["/twinkled"]

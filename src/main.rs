@@ -35,6 +35,7 @@ impl From<TwinkleError> for Error {
     }
 }
 
+#[derive(Debug)]
 struct Packet {
     dest: SocketAddr,
     body: Bytes,
@@ -71,7 +72,6 @@ impl Packet {
             let high: usize = From::from(body[UUID_LEN + 1]);
             let low: usize = From::from(body[UUID_LEN + 2]);
             let keylen = high * 256 + low;
-            println!("{:?}", keylen);
             let key = if keylen == 0 {
                 vec![]
             } else {
@@ -188,7 +188,7 @@ impl Client {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let (rxs, txs) = UdpSocket::bind("127.0.0.1:3000").await?.split();
+    let (rxs, txs) = UdpSocket::bind("0.0.0.0:9000").await?.split();
     let (txc, rxc) = channel(1024);
     let server = Server {sock: rxs, chan: txc, buf: vec![0; BUF_SIZE]};
     let client = Client {sock: txs, chan: rxc, store: Arc::new(Mutex::new(HashMap::new()))};
