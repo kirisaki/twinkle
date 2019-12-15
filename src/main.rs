@@ -188,7 +188,7 @@ impl Client {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let (rxs, txs) = UdpSocket::bind("0.0.0.0:9000").await?.split();
+    let (rxs, txs) = UdpSocket::bind("0.0.0.0:3000").await?.split();
     let (txc, rxc) = channel(1024);
     let server = Server {sock: rxs, chan: txc, buf: vec![0; BUF_SIZE]};
     let client = Client {sock: txs, chan: rxc, store: Arc::new(Mutex::new(HashMap::new()))};

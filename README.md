@@ -7,7 +7,7 @@ UDP-based, light key-value store.
 Use docker. Remenber to open UDP port.
 
 ```shell
-$ docker run -d -p 9000:9000/udp kirisaki:twinkle
+$ docker run -d -p 3000:3000/udp kirisaki:twinkle
 ```
 
 Docker repositry is https://hub.docker.com/repository/docker/kirisaki/twinkle
