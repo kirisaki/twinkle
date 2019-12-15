@@ -35,6 +35,32 @@ impl From<TwinkleError> for Error {
     }
 }
 
+fn serialize(s: Store) -> Option<Bytes> {
+    let mut output = vec![];
+    for (mut k, mut v) in s {
+        match append_bytes(&mut output, &mut k) {
+            Some(_) => {},
+            None => return None,
+        };
+        match append_bytes(&mut output, &mut v) {
+            Some(_) => {},
+            None => return None,
+        };
+    };
+    Some(output)
+}
+
+fn append_bytes(bytes: &mut Vec<u8>, data: &mut Vec<u8>) -> Option<()> {
+    let l = bytes.len();
+    if l > 65535 {
+        return None;
+    };
+    let lb = l.to_be_bytes();
+    bytes.append(&mut vec![lb[6], lb[7]]);
+    bytes.append(data);
+    Some(())
+}
+
 #[derive(Debug)]
 struct Packet {
     dest: SocketAddr,
