@@ -3,7 +3,7 @@ use twinkled::types::*;
 use twinkled::receiver::Server;
 use twinkled::transmitter::Client;
 
-use std::sync::{Arc};
+use std::sync::Arc;
 use std::collections::HashMap;
 
 use futures::future::{try_join};
