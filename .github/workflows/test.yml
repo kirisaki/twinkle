@@ -1,0 +1,14 @@
+name: test Twinkle
+
+on: [push]
+
+jobs:
+  build:
+    name: test Twinkle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: Build
+        run: cargo build --verbose
+      - name: Test
+        run: cargo test --verbose
