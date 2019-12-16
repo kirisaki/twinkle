@@ -1,11 +1,12 @@
-use crate::types::*;
-use crate::errors::*;
 use std::sync::{Arc};
 use std::net::SocketAddr;
 use tokio::sync::Mutex;
 use tokio::net::udp::RecvHalf;
 use tokio::sync::mpsc::Sender;
 
+use crate::types::*;
+use crate::store::*;
+use crate::errors::*;
 
 #[derive(Debug, PartialEq)]
 enum Request {
@@ -32,6 +33,7 @@ impl Server {
         }
     }
 }
+
 
 impl Packet {
     pub fn parse(self) -> Result<Instruction, TwinkleError> {
@@ -89,7 +91,7 @@ pub struct Instruction {
 }
 
 impl Instruction {
-    pub async fn respond(self, s: Arc<Mutex<Store>>) -> Result<(Bytes, SocketAddr), TwinkleError> {
+    pub async fn respond(self, s: Store) -> Result<(Bytes, SocketAddr), TwinkleError> {
         let mut store = s.lock().await;
         let Instruction{req, uuid, dest} = self;
         let resp = match req {

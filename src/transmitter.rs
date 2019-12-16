@@ -4,11 +4,12 @@ use tokio::sync::mpsc::Receiver;
 use tokio::net::udp::SendHalf;
 
 use crate::types::*;
+use crate::store::*;
 
 pub struct Client {
     pub sock: SendHalf,
     pub chan: Receiver<Packet>,
-    pub store: Arc<Mutex<Store>>,
+    pub store: Store,
 }
 
 impl Client {
