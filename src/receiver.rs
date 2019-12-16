@@ -38,7 +38,7 @@ impl Server {
 impl Packet {
     pub fn parse(self) -> Result<Instruction, TwinkleError> {
         let Packet {dest, body, amt} = self;
-        let e = Err(TwinkleError::ParseError);
+        let e = Err(TwinkleError::FailedParsing);
         if amt < UUID_LEN + 1 {
             e
         } else if amt == UUID_LEN + 1 {
