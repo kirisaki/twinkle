@@ -1,5 +1,6 @@
-use failure::{Fail};
-use std::io::{Error, ErrorKind};
+use std::fmt;
+use std::fmt::Display;
+use failure::{Backtrace, Context, Fail};
 
 #[derive(Debug, Fail)]
 pub enum TwinkleError {
@@ -13,8 +14,8 @@ pub enum TwinkleError {
     SomethingWrong,
 }
 
-impl From<TwinkleError> for Error {
-    fn from(e: TwinkleError) -> Error {
-        Error::new(ErrorKind::Other, e.to_string())
+impl From<TwinkleError> for std::io::Error {
+    fn from(e: TwinkleError) -> std::io::Error {
+        std::io::Error::new(std::io::ErrorKind::Other, e.to_string())
     }
 }

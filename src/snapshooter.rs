@@ -1,8 +1,7 @@
 use std::path::Path;
 use std::fs::File;
-use std::time::Duration;
-use std::thread::sleep;
 
+use tokio::time::{Duration, delay_for};
 use crate::store::*;
 
 
@@ -16,8 +15,9 @@ impl <P: AsRef<Path>> Snapshooter<P> {
     pub async fn run(self) -> Result<(), std::io::Error>
     {
         let Snapshooter{store, path, duration} = self;
-        sleep(duration);
-        store.serialize(File::open(path)?).await?;
-        Ok(())
+        loop {
+            delay_for(duration).await;
+            store.clone().serialize(File::create(&path)?).await?;
+        }
     }
 }
