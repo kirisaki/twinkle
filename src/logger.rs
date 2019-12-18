@@ -1,13 +1,12 @@
-use std::time::SystemTime;
-use log::{Log, Record, LevelFilter, Level, Metadata, set_boxed_logger, set_max_level};
+use log::{Log, Record, LevelFilter, Level, Metadata, set_boxed_logger, set_max_level, info};
 use tokio::sync::mpsc;
-
+use time::Tm;
 
 /// The struct for a log message.
 #[derive(Debug)]
 pub struct LogMsg {
     level: Level,
-    time: SystemTime,
+    time: Tm,
     msg: String,
 }
 
@@ -27,9 +26,10 @@ impl Logger {
         (logger, rx)
     }
     pub async fn run(self, mut rx: mpsc::UnboundedReceiver<LogMsg>) -> Result<(), std::io::Error> {
+        info!("logger launch");
         while let Some(m) = rx.recv().await {
             let LogMsg{level, time, msg} = m;
-            println!("{:?} - {} - {}", time, level, msg);
+            println!("{} - {} - {}", time.rfc3339(), level, msg);
         }
         Ok(())
     }
@@ -42,7 +42,7 @@ impl Log for Logger {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let now = SystemTime::now();
+            let now = time::now();
             let _ = self.tx.send(LogMsg{
                 level: record.level(),
                 time: now,

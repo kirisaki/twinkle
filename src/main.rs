@@ -28,6 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "127.0.0.1:3000".to_string()
         },
     };
+    println!("listen {}", host_port);
     let db_path = match var("TWINKLE_SNAPSHOT_DB_PATH") {
         Ok(v) => v,
         Err(_) => {
@@ -43,6 +44,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
            Duration::from_secs(3)
         },
     };
+    println!("snapshoot to \"{}\" every {:?} sec", db_path, duration);
 
 
     let (rxs, txs) = UdpSocket::bind(host_port).await?.split();
@@ -58,6 +60,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client {sock: txs, chan: rxc, store: store.clone()};
     let snapshooter = Snapshooter {store: store.clone(), path: db_path, duration: duration};
     let (logger, rx) = Logger::new(LevelFilter::Trace);
+    println!("ready to launch");
 
     let _ = try_join4(
         server.run(),

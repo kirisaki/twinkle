@@ -26,7 +26,7 @@ pub struct Server {
 
 impl Server {
     pub async fn run(self) -> Result<(), std::io::Error> {
-        info!("receiver, launced");
+        info!("receiver launch");
         let Server {mut sock, mut chan, mut buf} = self;
         loop {
             let (amt, dest) = sock.recv_from(&mut buf).await?;
