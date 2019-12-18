@@ -4,7 +4,9 @@ use std::path::Path;
 use std::fs::File;
 use std::env::var;
 
-use futures::future::try_join3;
+use futures::future::try_join4;
+
+use log::LevelFilter;
 
 use tokio::time::Duration;
 use tokio::net::UdpSocket;
@@ -15,6 +17,7 @@ use twinkled::store::Store;
 use twinkled::receiver::Server;
 use twinkled::transmitter::Client;
 use twinkled::snapshooter::Snapshooter;
+use twinkled::logger::Logger;
 
 
 #[tokio::main]
@@ -22,7 +25,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let host_port = match var("TWINKLE_HOST_WITH_PORT") {
         Ok(v) => v,
         Err(_) => {
-            "127.0.0.1".to_string()
+            "127.0.0.1:3000".to_string()
         },
     };
     let db_path = match var("TWINKLE_SNAPSHOT_DB_PATH") {
@@ -54,11 +57,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let server = Server {sock: rxs, chan: txc, buf: vec![0; BUF_SIZE]};
     let client = Client {sock: txs, chan: rxc, store: store.clone()};
     let snapshooter = Snapshooter {store: store.clone(), path: db_path, duration: duration};
+    let (logger, rx) = Logger::new(LevelFilter::Trace);
 
-    let _ = try_join3(
+    let _ = try_join4(
         server.run(),
         client.run(),
         snapshooter.run(),
+        logger.run(rx),
     ).await?;
 
     Ok(())

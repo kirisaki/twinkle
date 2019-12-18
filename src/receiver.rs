@@ -1,6 +1,7 @@
-use std::sync::{Arc};
 use std::net::SocketAddr;
-use tokio::sync::Mutex;
+
+use log::{info};
+
 use tokio::net::udp::RecvHalf;
 use tokio::sync::mpsc::Sender;
 
@@ -25,6 +26,7 @@ pub struct Server {
 
 impl Server {
     pub async fn run(self) -> Result<(), std::io::Error> {
+        info!("receiver, launced");
         let Server {mut sock, mut chan, mut buf} = self;
         loop {
             let (amt, dest) = sock.recv_from(&mut buf).await?;

@@ -1,6 +1,6 @@
 [package]
 name = "twinkled"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Akihito KIRISAKI <kirisaki@klaraworks.net>"]
 license = "BSD-3-Clause"
 edition = "2018"
@@ -12,6 +12,7 @@ categories = ["database", "database-implementations"]
 readme = "README.md"
 
 [dependencies]
-futures = "0.3"
-tokio = { version = "0.2", features = ["full"] }
+futures = "^0.3"
+tokio = { version = "^0.2", features = ["full"] }
 failure = "^0.1.6"
+log = { version = "^0.4.8", features = ["std"] }
