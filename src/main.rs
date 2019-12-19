@@ -41,14 +41,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Err(_) => panic!("invalid duration"),
         },
         Err(_) => {
-           Duration::from_secs(3)
+           Duration::from_secs(10)
         },
     };
     println!("snapshoot to \"{}\" every {:?} sec", db_path, duration);
 
 
     let (rxs, txs) = UdpSocket::bind(host_port).await?.split();
-    let (txc, rxc) = channel(1024); // TODO: error handling when a channel overflows
+    let (txc, rxc) = channel(2048); // TODO: error handling when a channel overflows
     let path = Path::new(&db_path);
     let store = if path.exists() {
         let reader = File::open(path)?;
