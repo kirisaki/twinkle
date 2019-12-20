@@ -48,7 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     let (rxs, txs) = UdpSocket::bind(host_port).await?.split();
-    let (txc, rxc) = channel(2048); // TODO: error handling when a channel overflows
+    let (txc, rxc) = channel(1024 * 1024 * 1024); // TODO: error handling when a channel overflows
     let path = Path::new(&db_path);
     let store = if path.exists() {
         let reader = File::open(path)?;
