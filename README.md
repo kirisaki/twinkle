@@ -1,8 +1,10 @@
 # Twinkle
 
-[![Actions Status](https://github.com/kirisaki/twinkle/workflows/test/badge.svg)](https://github.com/kirisaki/twinkle/actions)
-[![dockeri.co](https://dockeri.co/image/kirisaki/twinkle)](https://hub.docker.com/r/kirisaki/twinkle)
 UDP-based, light key-value store.
+
+[![Actions Status](https://github.com/kirisaki/twinkle/workflows/test-twinkle/badge.svg)](https://github.com/kirisaki/twinkle/actions)
+
+[![dockeri.co](https://dockeri.co/image/kirisaki/twinkle)](https://hub.docker.com/r/kirisaki/twinkle)
 
 ## Usage
 
