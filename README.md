@@ -6,6 +6,16 @@ UDP-based, light key-value store.
 
 [![dockeri.co](https://dockeri.co/image/kirisaki/twinkle)](https://hub.docker.com/r/kirisaki/twinkle)
 
+## benchmark
+
+```
+twinkle:
+0.176secs elapsed for 2000 requests
+redis:
+0.210secs elapsed for 2000 requests
+```
+[Benchmark code is here.](https://github.com/kirisaki/twinkle-bench)
+
 ## Usage
 
 Use docker. Remenber to open UDP port.
@@ -19,7 +29,6 @@ Docker repositry is https://hub.docker.com/repository/docker/kirisaki/twinkle
 ## Client libraly
 
 - Rust https://github.com/kirisaki/twinkle-rust
-
 
 ## License
 
