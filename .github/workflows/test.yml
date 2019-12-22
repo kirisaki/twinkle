@@ -1,4 +1,4 @@
-name: test Twinkle
+name: test-twinkle
 
 on: [push]
 
