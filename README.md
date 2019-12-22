@@ -1,5 +1,6 @@
 # Twinkle
 
+[![Actions Status](https://github.com/kirisaki/twinkle/workflows/test/badge.svg)](https://github.com/kirisaki/twinkle/actions)
 UDP-based, light key-value store.
 
 ## Usage
